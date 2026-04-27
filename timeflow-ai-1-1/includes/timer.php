@@ -24,12 +24,12 @@ function tf_get_task_logs( $task_id ) {
 function tf_add_task_log( $task_id, $log ) {
 	$logs   = tf_get_task_logs( $task_id );
 	$logs[] = array(
-		'task_id'    => (int) $task_id,
-		'project_id' => isset( $log['project_id'] ) ? (int) $log['project_id'] : 0,
-		'start_time' => isset( $log['start_time'] ) ? (int) $log['start_time'] : 0,
-		'end_time'   => isset( $log['end_time'] ) ? (int) $log['end_time'] : 0,
-		'duration'   => isset( $log['duration'] ) ? (int) $log['duration'] : 0,
-		'type'       => isset( $log['type'] ) ? sanitize_text_field( $log['type'] ) : 'manual',
+		'task_id'     => (int) $task_id,
+		'project_id'  => isset( $log['project_id'] ) ? (int) $log['project_id'] : 0,
+		'start_time'  => isset( $log['start_time'] ) ? (int) $log['start_time'] : 0,
+		'end_time'    => isset( $log['end_time'] ) ? (int) $log['end_time'] : 0,
+		'duration'    => isset( $log['duration'] ) ? (int) $log['duration'] : 0,
+		'type'        => isset( $log['type'] ) ? sanitize_text_field( $log['type'] ) : 'manual',
 	);
 
 	update_post_meta( $task_id, '_tf_logs', $logs );
@@ -61,12 +61,8 @@ function tf_start_timer( $task_id ) {
 	$active_task  = (int) get_option( 'tf_active_task', 0 );
 	$active_start = (int) get_option( 'tf_timer_start', 0 );
 
-	if ( $task_id <= 0 ) {
-		return new WP_Error( 'tf_invalid_selection', __( 'Please select a project and task', 'timeflow-ai-1-1' ) );
-	}
-
 	if ( $active_task > 0 && $active_start > 0 ) {
-		return new WP_Error( 'tf_timer_exists', __( 'Timer already running', 'timeflow-ai-1-1' ) );
+		return new WP_Error( 'tf_timer_exists', __( 'A timer is already running.', 'timeflow-ai-1-1' ) );
 	}
 
 	$task = get_post( $task_id );
@@ -74,17 +70,21 @@ function tf_start_timer( $task_id ) {
 		return new WP_Error( 'tf_invalid_task', __( 'Invalid task.', 'timeflow-ai-1-1' ) );
 	}
 
-	$project_id = tf_get_task_project_id( $task_id );
-	$start_time = time();
+	$project_id = (int) get_post_meta( $task_id, '_tf_project_id', true );
+	if ( $project_id <= 0 ) {
+		return new WP_Error( 'tf_missing_project', __( 'Please assign a project to this task first.', 'timeflow-ai-1-1' ) );
+	}
+
+	$start_time = current_time( 'timestamp' );
 
 	update_option( 'tf_active_task', $task_id, false );
-	update_option( 'tf_active_project', max( 0, $project_id ), false );
+	update_option( 'tf_active_project', $project_id, false );
 	update_option( 'tf_timer_start', $start_time, false );
 
 	return array(
-		'task_id'    => $task_id,
-		'project_id' => $project_id,
-		'start_time' => $start_time,
+		'task_id'     => $task_id,
+		'project_id'  => $project_id,
+		'start_time'  => $start_time,
 	);
 }
 
@@ -94,15 +94,15 @@ function tf_start_timer( $task_id ) {
  * @return array|WP_Error
  */
 function tf_stop_timer() {
-	$task_id    = (int) get_option( 'tf_active_task', 0 );
-	$project_id = (int) get_option( 'tf_active_project', 0 );
-	$start_time = (int) get_option( 'tf_timer_start', 0 );
+	$task_id     = (int) get_option( 'tf_active_task', 0 );
+	$project_id  = (int) get_option( 'tf_active_project', 0 );
+	$start_time  = (int) get_option( 'tf_timer_start', 0 );
 
 	if ( $task_id <= 0 || $start_time <= 0 ) {
 		return new WP_Error( 'tf_no_timer', __( 'No active timer is running.', 'timeflow-ai-1-1' ) );
 	}
 
-	$end_time = time();
+	$end_time = current_time( 'timestamp' );
 	$duration = max( 1, $end_time - $start_time );
 
 	tf_add_task_log(
@@ -118,7 +118,7 @@ function tf_stop_timer() {
 	);
 
 	$task_total    = tf_add_time_to_task_total( $task_id, $duration );
-	$project_total = $project_id > 0 ? tf_add_time_to_project_total( $project_id, $duration ) : 0;
+	$project_total = tf_add_time_to_project_total( $project_id, $duration );
 
 	update_option( 'tf_active_task', 0, false );
 	update_option( 'tf_active_project', 0, false );
@@ -147,10 +147,6 @@ function tf_add_manual_time( $task_id, $minutes ) {
 	$task_id = absint( $task_id );
 	$minutes = absint( $minutes );
 
-	if ( $task_id <= 0 ) {
-		return new WP_Error( 'tf_invalid_selection', __( 'Please select a project and task', 'timeflow-ai-1-1' ) );
-	}
-
 	if ( $minutes <= 0 ) {
 		return new WP_Error( 'tf_invalid_minutes', __( 'Minutes must be greater than zero.', 'timeflow-ai-1-1' ) );
 	}
@@ -160,9 +156,13 @@ function tf_add_manual_time( $task_id, $minutes ) {
 		return new WP_Error( 'tf_invalid_task', __( 'Invalid task.', 'timeflow-ai-1-1' ) );
 	}
 
-	$project_id = tf_get_task_project_id( $task_id );
-	$duration   = $minutes * 60;
-	$now        = time();
+	$project_id = (int) get_post_meta( $task_id, '_tf_project_id', true );
+	if ( $project_id <= 0 ) {
+		return new WP_Error( 'tf_missing_project', __( 'Please assign a project to this task first.', 'timeflow-ai-1-1' ) );
+	}
+
+	$duration = $minutes * 60;
+	$now      = current_time( 'timestamp' );
 
 	tf_add_task_log(
 		$task_id,
@@ -177,7 +177,7 @@ function tf_add_manual_time( $task_id, $minutes ) {
 	);
 
 	$task_total    = tf_add_time_to_task_total( $task_id, $duration );
-	$project_total = $project_id > 0 ? tf_add_time_to_project_total( $project_id, $duration ) : 0;
+	$project_total = tf_add_time_to_project_total( $project_id, $duration );
 
 	return array(
 		'task_id'         => $task_id,
@@ -199,10 +199,10 @@ function tf_add_manual_time( $task_id, $minutes ) {
 function tf_get_all_logs( $limit = 50 ) {
 	$tasks = get_posts(
 		array(
-			'post_type'   => 'tf_task',
-			'post_status' => 'any',
-			'numberposts' => -1,
-			'fields'      => 'ids',
+			'post_type'      => 'tf_task',
+			'post_status'    => 'any',
+			'numberposts'    => -1,
+			'fields'         => 'ids',
 		)
 	);
 

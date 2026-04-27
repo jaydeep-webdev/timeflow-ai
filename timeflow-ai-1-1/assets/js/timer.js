@@ -20,15 +20,6 @@ jQuery(function ($) {
     }, extraData || {}));
   }
 
-  $('#tf_project_id').on('change', function () {
-    const val = parseInt($(this).val(), 10) || 0;
-    if (val > 0) {
-      $('.tf-project-warning').hide();
-    } else {
-      $('.tf-project-warning').show();
-    }
-  });
-
   $('#tf-start-timer').on('click', function () {
     postAction('tf_start_timer').done(function (resp) {
       if (!resp.success) {
