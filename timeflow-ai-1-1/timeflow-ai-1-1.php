@@ -93,10 +93,7 @@ function tf_enqueue_admin_assets( $hook ) {
 			array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'tf_timer_nonce' ),
-				'restUrl'      => esc_url_raw( rest_url( 'timeflow/v1/dashboard' ) ),
-				'tasksRestUrl'  => esc_url_raw( rest_url( 'timeflow/v1/tasks' ) ),
-				'actionRestUrl' => esc_url_raw( rest_url( 'timeflow/v1/action' ) ),
-				'restNonce'    => wp_create_nonce( 'wp_rest' ),
+				'restUrl' => esc_url_raw( rest_url( 'timeflow/v1/dashboard' ) ),
 			)
 		);
 	}
