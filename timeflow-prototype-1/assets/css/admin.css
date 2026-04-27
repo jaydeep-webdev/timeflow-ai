@@ -1,0 +1,29 @@
+.tf-field-row {
+  margin-bottom: 12px;
+}
+
+.tf-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tf-message {
+  min-height: 20px;
+  margin: 8px 0 12px;
+  font-weight: 600;
+}
+
+.tf-message.is-success {
+  color: #007017;
+}
+
+.tf-message.is-error {
+  color: #b32d2e;
+}
+
+.tf-log-table th,
+.tf-log-table td {
+  vertical-align: top;
+}

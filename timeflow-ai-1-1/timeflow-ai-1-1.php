@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Timeflow AI 1.2
+ * Plugin Name: Timeflow AI 1.1
  * Description: Lightweight projects, tasks, timer tracking, and admin dashboard control panel.
- * Version: 1.2.0
+ * Version: 1.1.0
  * Author: Timeflow
  * Text Domain: timeflow-ai-1-1
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TF_PLUGIN_VERSION', '1.2.0' );
+define( 'TF_PLUGIN_VERSION', '1.1.0' );
 define( 'TF_PLUGIN_FILE', __FILE__ );
 define( 'TF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -93,10 +93,7 @@ function tf_enqueue_admin_assets( $hook ) {
 			array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'tf_timer_nonce' ),
-				'restUrl'      => esc_url_raw( rest_url( 'timeflow/v1/dashboard' ) ),
-				'tasksRestUrl'  => esc_url_raw( rest_url( 'timeflow/v1/tasks' ) ),
-				'actionRestUrl' => esc_url_raw( rest_url( 'timeflow/v1/action' ) ),
-				'restNonce'    => wp_create_nonce( 'wp_rest' ),
+				'restUrl' => esc_url_raw( rest_url( 'timeflow/v1/dashboard' ) ),
 			)
 		);
 	}

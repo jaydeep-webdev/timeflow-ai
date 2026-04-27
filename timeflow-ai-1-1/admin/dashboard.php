@@ -50,23 +50,20 @@ add_action( 'admin_menu', 'tf_register_admin_menu' );
  */
 function tf_render_dashboard_page() {
 	?>
-	<div class="wrap tf-dashboard-wrap" id="tf-dashboard">
-		<div class="tf-dashboard-header">
-			<h1><?php esc_html_e( 'Timeflow AI 1.2 Dashboard', 'timeflow-ai-1-1' ); ?></h1>
-			<p><?php esc_html_e( 'Track tasks, projects, and active timer from one control panel.', 'timeflow-ai-1-1' ); ?></p>
-		</div>
+	<div class="wrap tf-dashboard-wrap">
+		<h1><?php esc_html_e( 'Timeflow AI 1.1 Dashboard', 'timeflow-ai-1-1' ); ?></h1>
 
-		<div class="tf-dashboard-grid tf-top-grid">
-			<section class="tf-card tf-card-highlight">
+		<div class="tf-dashboard-grid">
+			<section class="tf-card">
 				<h2><?php esc_html_e( 'Active Timer', 'timeflow-ai-1-1' ); ?></h2>
 				<p><strong><?php esc_html_e( 'Task:', 'timeflow-ai-1-1' ); ?></strong> <span id="tf-active-task">—</span></p>
 				<p><strong><?php esc_html_e( 'Project:', 'timeflow-ai-1-1' ); ?></strong> <span id="tf-active-project">—</span></p>
 				<p><strong><?php esc_html_e( 'Started:', 'timeflow-ai-1-1' ); ?></strong> <span id="tf-active-start">—</span></p>
-				<div class="tf-controls tf-btn-row">
+				<p>
 					<button class="button button-primary" id="tf-dashboard-start"><?php esc_html_e( 'Start Timer', 'timeflow-ai-1-1' ); ?></button>
 					<button class="button" id="tf-dashboard-stop"><?php esc_html_e( 'Stop Timer', 'timeflow-ai-1-1' ); ?></button>
-				</div>
-				<div class="tf-controls tf-btn-row">
+				</p>
+				<div class="tf-controls">
 					<input type="number" min="1" step="1" id="tf-dashboard-manual-minutes" placeholder="<?php esc_attr_e( 'Minutes', 'timeflow-ai-1-1' ); ?>" />
 					<button class="button" id="tf-dashboard-add-time"><?php esc_html_e( 'Add Time', 'timeflow-ai-1-1' ); ?></button>
 				</div>
@@ -86,12 +83,10 @@ function tf_render_dashboard_page() {
 
 			<section class="tf-card">
 				<h2><?php esc_html_e( 'Stats', 'timeflow-ai-1-1' ); ?></h2>
-				<div class="tf-stat-list">
-					<div class="tf-stat-item"><span><?php esc_html_e( 'Total Projects', 'timeflow-ai-1-1' ); ?></span><strong id="tf-stat-projects">0</strong></div>
-					<div class="tf-stat-item"><span><?php esc_html_e( 'Total Tasks', 'timeflow-ai-1-1' ); ?></span><strong id="tf-stat-tasks">0</strong></div>
-					<div class="tf-stat-item"><span><?php esc_html_e( 'Total Time', 'timeflow-ai-1-1' ); ?></span><strong id="tf-stat-total-time">0s</strong></div>
-					<div class="tf-stat-item"><span><?php esc_html_e( 'Today\'s Time', 'timeflow-ai-1-1' ); ?></span><strong id="tf-stat-today-time">0s</strong></div>
-				</div>
+				<p><?php esc_html_e( 'Total Projects:', 'timeflow-ai-1-1' ); ?> <strong id="tf-stat-projects">0</strong></p>
+				<p><?php esc_html_e( 'Total Tasks:', 'timeflow-ai-1-1' ); ?> <strong id="tf-stat-tasks">0</strong></p>
+				<p><?php esc_html_e( 'Total Time:', 'timeflow-ai-1-1' ); ?> <strong id="tf-stat-total-time">0s</strong></p>
+				<p><?php esc_html_e( 'Today\'s Time:', 'timeflow-ai-1-1' ); ?> <strong id="tf-stat-today-time">0s</strong></p>
 			</section>
 		</div>
 
