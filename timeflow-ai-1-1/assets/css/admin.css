@@ -1,0 +1,50 @@
+.tf-dashboard-wrap .tf-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.tf-dashboard-wrap .tf-dashboard-lists {
+  margin-top: 18px;
+}
+
+.tf-card {
+  background: #fff;
+  border: 1px solid #dcdcde;
+  padding: 14px;
+}
+
+.tf-card-full {
+  grid-column: 1 / -1;
+}
+
+.tf-field-row {
+  margin-bottom: 12px;
+}
+
+.tf-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tf-message {
+  min-height: 20px;
+  margin: 8px 0 12px;
+  font-weight: 600;
+}
+
+.tf-message.is-success {
+  color: #0a7f2e;
+}
+
+.tf-message.is-error {
+  color: #b32d2e;
+}
+
+.tf-log-table th,
+.tf-log-table td {
+  vertical-align: top;
+}
