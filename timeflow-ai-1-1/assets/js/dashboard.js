@@ -1,9 +1,7 @@
 jQuery(function ($) {
-  const state = { data: null };
-  const projectSelect = document.getElementById('tf-quick-project');
-  const taskSelect = document.getElementById('tf-quick-task');
-  const startBtn = document.getElementById('tf-dashboard-start');
-  const stopBtn = document.getElementById('tf-dashboard-stop');
+  const state = {
+    data: null
+  };
 
   function formatDuration(totalSeconds) {
     const seconds = Math.max(0, parseInt(totalSeconds || 0, 10));
@@ -27,37 +25,46 @@ jQuery(function ($) {
   }
 
   function fetchDashboard() {
-    return fetch(tfDashboard.restUrl, {
-      method: 'GET',
-      credentials: 'same-origin',
-      headers: {
-        'X-WP-Nonce': tfDashboard.restNonce || ''
-      }
-    }).then((res) => {
-      if (!res.ok) {
-        return res.json().then((data) => Promise.reject(data));
-      }
-      return res.json();
-    });
+    return $.get(tfDashboard.restUrl);
   }
 
-  function postAction(payload) {
-    return fetch(tfDashboard.actionRestUrl, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-WP-Nonce': tfDashboard.restNonce || ''
-      },
-      body: JSON.stringify(payload)
-    }).then((res) => res.json());
+  function ajaxAction(action, extra) {
+    return $.post(tfDashboard.ajaxUrl, Object.assign({ action: action, nonce: tfDashboard.nonce }, extra || {}));
+  }
+
+  function renderQuickSelectors(data) {
+    const projectSelect = $('#tf-quick-project');
+    const taskSelect = $('#tf-quick-task');
+
+    projectSelect.empty();
+    taskSelect.empty();
+
+    projectSelect.append('<option value="">Select project</option>');
+    data.projects.forEach((p) => {
+      projectSelect.append(`<option value="${p.id}">${p.title}</option>`);
+    });
+
+    const selectedProjectId = parseInt(projectSelect.val(), 10) || 0;
+    renderTaskOptions(selectedProjectId || (data.projects[0] ? data.projects[0].id : 0));
+  }
+
+  function renderTaskOptions(projectId) {
+    const taskSelect = $('#tf-quick-task');
+    const data = state.data;
+    taskSelect.empty();
+    taskSelect.append('<option value="">Select task</option>');
+    if (!data) return;
+
+    data.tasks.filter((t) => parseInt(t.project_id, 10) === parseInt(projectId, 10)).forEach((t) => {
+      taskSelect.append(`<option value="${t.id}">${t.title}</option>`);
+    });
   }
 
   function renderProjects(data) {
     const body = $('#tf-projects-body');
     body.empty();
     if (!data.projects.length) {
-      body.append('<tr><td colspan="3">Create a project first</td></tr>');
+      body.append('<tr><td colspan="3">No projects found.</td></tr>');
       return;
     }
 
@@ -66,16 +73,21 @@ jQuery(function ($) {
     });
   }
 
-  function renderTasksTable(data) {
+  function renderTasks(data) {
     const body = $('#tf-tasks-body');
     body.empty();
     if (!data.tasks.length) {
-      body.append('<tr><td colspan="4">No tasks available</td></tr>');
+      body.append('<tr><td colspan="4">No tasks found.</td></tr>');
       return;
     }
 
     data.tasks.slice(0, 10).forEach((t) => {
-      body.append(`<tr><td>${t.title}</td><td>${t.project || 'Standalone'}</td><td>${formatDuration(t.total_time)}</td><td><button class="button tf-task-start" data-task-id="${t.id}">Start</button></td></tr>`);
+      body.append(`<tr>
+        <td>${t.title}</td>
+        <td>${t.project || '—'}</td>
+        <td>${formatDuration(t.total_time)}</td>
+        <td><button class="button tf-task-start" data-task-id="${t.id}">Start</button></td>
+      </tr>`);
     });
   }
 
@@ -88,7 +100,7 @@ jQuery(function ($) {
     }
 
     data.logs.forEach((log) => {
-      body.append(`<tr><td>${log.project || 'Standalone'}</td><td>${log.task || '—'}</td><td>${formatDuration(log.duration)}</td><td>${log.type}</td></tr>`);
+      body.append(`<tr><td>${log.project || '—'}</td><td>${log.task || '—'}</td><td>${formatDuration(log.duration)}</td><td>${log.type}</td></tr>`);
     });
   }
 
@@ -101,7 +113,7 @@ jQuery(function ($) {
 
   function renderActive(data) {
     $('#tf-active-task').text(data.active_task ? data.active_task.title : '—');
-    $('#tf-active-project').text(data.active_project ? data.active_project.title : 'Standalone');
+    $('#tf-active-project').text(data.active_project ? data.active_project.title : '—');
     $('#tf-active-start').text(formatTime(data.timer_start));
 
     const hasActive = !!data.active_task;
@@ -110,148 +122,104 @@ jQuery(function ($) {
     $('#tf-dashboard-add-time').prop('disabled', !hasActive);
   }
 
-  function renderProjectSelector(data) {
-    projectSelect.innerHTML = '';
-
-    if (!data.projects.length) {
-      projectSelect.innerHTML = '<option value="">Create a project first</option>';
-      projectSelect.disabled = true;
-      taskSelect.innerHTML = '<option value="">Select project first</option>';
-      taskSelect.disabled = true;
-      return;
-    }
-
-    projectSelect.innerHTML = '<option value="">Select project first</option>';
-    data.projects.forEach((project) => {
-      const opt = document.createElement('option');
-      opt.value = String(project.id);
-      opt.textContent = project.title;
-      projectSelect.appendChild(opt);
-    });
-    projectSelect.disabled = false;
-    taskSelect.innerHTML = '<option value="">Select project first</option>';
-    taskSelect.disabled = true;
-  }
-
-  function bindTaskDropdownForProject(projectId) {
-    taskSelect.innerHTML = '<option value="">Select Task</option>';
-
-    if (!projectId) {
-      taskSelect.disabled = true;
-      taskSelect.innerHTML = '<option value="">Select project first</option>';
-      return;
-    }
-
-    const filtered = state.data.tasks.filter((t) => String(t.project_id) === String(projectId));
-
-    if (!filtered.length) {
-      const opt = document.createElement('option');
-      opt.value = '';
-      opt.text = 'No tasks found';
-      taskSelect.appendChild(opt);
-      taskSelect.disabled = true;
-      setMessage('No tasks found for this project', 'error');
-      return;
-    }
-
-    filtered.forEach((task) => {
-      const opt = document.createElement('option');
-      opt.value = String(task.id);
-      opt.text = task.title;
-      taskSelect.appendChild(opt);
-    });
-
-    taskSelect.disabled = false;
-  }
-
   function renderAll(data) {
     state.data = data;
     renderStats(data);
     renderActive(data);
-    renderProjectSelector(data);
+    renderQuickSelectors(data);
     renderProjects(data);
-    renderTasksTable(data);
+    renderTasks(data);
     renderLogs(data);
+
+    if (data.projects.length && !$('#tf-quick-project').val()) {
+      $('#tf-quick-project').val(String(data.projects[0].id));
+      renderTaskOptions(data.projects[0].id);
+    }
   }
 
   function loadDashboard() {
-    fetchDashboard().then(function (data) {
+    fetchDashboard().done(function (data) {
       renderAll(data);
-    }).catch(function (err) {
-      const message = err && err.message ? err.message : 'Failed to load dashboard data.';
-      setMessage(message, 'error');
+    }).fail(function () {
+      setMessage('Failed to load dashboard data.', 'error');
     });
   }
 
-  projectSelect.addEventListener('change', function () {
-    bindTaskDropdownForProject(this.value);
+  $('#tf-quick-project').on('change', function () {
+    renderTaskOptions($(this).val());
   });
 
-  startBtn.addEventListener('click', function () {
-    const taskId = taskSelect.value;
-    const projectId = projectSelect.value;
-
+  $('#tf-dashboard-start').on('click', function () {
+    const taskId = parseInt($('#tf-quick-task').val(), 10);
     if (!taskId) {
-      setMessage('Please select a project and task', 'error');
+      setMessage('Please select a project and task first.', 'error');
       return;
     }
 
-    postAction({ action: 'START_TIMER', task_id: taskId, project_id: projectId }).then((res) => {
-      if (!res.success) {
-        setMessage(res.message || 'Unable to start timer.', 'error');
+    ajaxAction('tf_start_timer', { task_id: taskId }).done(function (resp) {
+      if (!resp.success) {
+        setMessage(resp.data.message || 'Unable to start timer.', 'error');
         return;
       }
+      setMessage(resp.data.message, 'success');
       loadDashboard();
+    }).fail(function () {
+      setMessage('Request failed.', 'error');
     });
   });
 
-  stopBtn.addEventListener('click', function () {
-    postAction({ action: 'STOP_TIMER' }).then((res) => {
-      if (!res.success) {
-        setMessage(res.message || 'Unable to stop timer.', 'error');
+  $('#tf-dashboard-stop').on('click', function () {
+    ajaxAction('tf_stop_timer').done(function (resp) {
+      if (!resp.success) {
+        setMessage(resp.data.message || 'Unable to stop timer.', 'error');
         return;
       }
+      setMessage(resp.data.message, 'success');
       loadDashboard();
+    }).fail(function () {
+      setMessage('Request failed.', 'error');
     });
   });
 
   $('#tf-dashboard-add-time').on('click', function () {
     const minutes = parseInt($('#tf-dashboard-manual-minutes').val(), 10);
-    const activeTaskId = state.data && state.data.active_task ? parseInt(state.data.active_task.id, 10) : 0;
-
     if (!minutes || minutes < 1) {
       setMessage('Enter minutes greater than 0.', 'error');
       return;
     }
 
-    if (!activeTaskId) {
-      setMessage('Please select a project and task', 'error');
+    const taskId = state.data && state.data.active_task ? parseInt(state.data.active_task.id, 10) : 0;
+    if (!taskId) {
+      setMessage('No active task to add manual time to.', 'error');
       return;
     }
 
-    postAction({ action: 'ADD_TIME', task_id: activeTaskId, minutes: minutes }).then((res) => {
-      if (!res.success) {
-        setMessage(res.message || 'Unable to add time.', 'error');
+    ajaxAction('tf_add_manual_time', { task_id: taskId, minutes: minutes }).done(function (resp) {
+      if (!resp.success) {
+        setMessage(resp.data.message || 'Unable to add manual time.', 'error');
         return;
       }
       $('#tf-dashboard-manual-minutes').val('');
+      setMessage(resp.data.message, 'success');
       loadDashboard();
+    }).fail(function () {
+      setMessage('Request failed.', 'error');
     });
   });
 
   $(document).on('click', '.tf-task-start', function () {
-    const taskId = parseInt($(this).data('task-id'), 10) || 0;
-    if (!taskId) {
-      setMessage('Please select a project and task', 'error');
-      return;
-    }
+    const taskId = parseInt($(this).data('task-id'), 10);
+    if (!taskId) return;
 
-    postAction({ action: 'START_TIMER', task_id: taskId }).then((res) => {
-      if (!res.success) {
-        setMessage(res.message || 'Unable to start timer.', 'error');
+    ajaxAction('tf_start_timer', { task_id: taskId }).done(function (resp) {
+      if (!resp.success) {
+        setMessage(resp.data.message || 'Unable to start timer.', 'error');
         return;
       }
+      setMessage(resp.data.message, 'success');
       loadDashboard();
+    }).fail(function () {
+      setMessage('Request failed.', 'error');
     });
   });
 
