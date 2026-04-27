@@ -46,7 +46,7 @@ function tf_save_task_meta( $post_id ) {
 	if ( $project_id > 0 && 'tf_project' === get_post_type( $project_id ) ) {
 		update_post_meta( $post_id, '_tf_project_id', $project_id );
 	} else {
-		update_post_meta( $post_id, '_tf_project_id', 0 );
+		delete_post_meta( $post_id, '_tf_project_id' );
 	}
 }
 add_action( 'save_post_tf_task', 'tf_save_task_meta' );
@@ -67,30 +67,20 @@ function tf_render_task_meta_box( $post ) {
 	$active_task = (int) get_option( 'tf_active_task', 0 );
 	$is_active   = $active_task === (int) $post->ID;
 
-	if ( 0 === $project_id && isset( $_GET['tf_project_id'] ) ) {
-		$prefill_id = absint( $_GET['tf_project_id'] );
-		if ( $prefill_id > 0 && 'tf_project' === get_post_type( $prefill_id ) ) {
-			$project_id = $prefill_id;
-		}
-	}
-
 	if ( empty( $status ) ) {
 		$status = 'pending';
 	}
 	?>
 	<div class="tf-field-row">
-		<label for="tf_project_id"><strong><?php esc_html_e( 'Project (required when creating under a project)', 'timeflow-ai-1-1' ); ?></strong></label>
+		<label for="tf_project_id"><strong><?php esc_html_e( 'Project', 'timeflow-ai-1-1' ); ?></strong></label>
 		<select id="tf_project_id" name="tf_project_id">
-			<option value="0"><?php esc_html_e( 'Standalone task (no project)', 'timeflow-ai-1-1' ); ?></option>
+			<option value="0"><?php esc_html_e( 'Select project', 'timeflow-ai-1-1' ); ?></option>
 			<?php foreach ( $projects as $project ) : ?>
 				<option value="<?php echo esc_attr( $project->ID ); ?>" <?php selected( $project_id, (int) $project->ID ); ?>>
 					<?php echo esc_html( $project->post_title ); ?>
 				</option>
 			<?php endforeach; ?>
 		</select>
-		<p class="description tf-project-warning" <?php echo $project_id > 0 ? 'style="display:none;"' : ''; ?>>
-			<?php esc_html_e( 'Warning: no project selected. This will be saved as a standalone task.', 'timeflow-ai-1-1' ); ?>
-		</p>
 	</div>
 
 	<div class="tf-field-row">
@@ -137,7 +127,7 @@ function tf_render_task_meta_box( $post ) {
 			<?php foreach ( array_reverse( $logs ) as $log ) : ?>
 				<tr>
 					<td><?php echo esc_html( ucfirst( $log['type'] ) ); ?></td>
-					<td><?php echo esc_html( (int) $log['project_id'] > 0 ? get_the_title( (int) $log['project_id'] ) : __( 'Standalone', 'timeflow-ai-1-1' ) ); ?></td>
+					<td><?php echo esc_html( get_the_title( (int) $log['project_id'] ) ); ?></td>
 					<td><?php echo esc_html( tf_format_datetime( (int) $log['start_time'] ) ); ?></td>
 					<td><?php echo esc_html( tf_format_datetime( (int) $log['end_time'] ) ); ?></td>
 					<td><?php echo esc_html( tf_format_duration( (int) $log['duration'] ) ); ?></td>
